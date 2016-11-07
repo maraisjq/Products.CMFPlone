@@ -102,6 +102,9 @@ New features:
 
 - Toolbar: Let the toolbar submenus be as wide as they need to be and do not break entries into multiple lines. [thet]
 
+- Adapt code and tests to the new indexing operations queueing.
+  Part of PLIP 1343: https://github.com/plone/Products.CMFPlone/issues/1343
+  [gforcada]
 
 Bug fixes:
 
