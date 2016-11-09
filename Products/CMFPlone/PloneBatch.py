@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from ZTUtils import make_query
-
 from plone.batching.batch import QuantumBatch
 from plone.batching.utils import calculate_pagerange
-
 from zope.deprecation import deprecated
+from ZTUtils import make_query
 
 
 class Batch(QuantumBatch):
@@ -21,11 +19,14 @@ class Batch(QuantumBatch):
 
     def __len__(self):
         return self.length
-    __len__ = deprecated(__len__,
-                         ('Using len() is deprecated. Use the `length` attribute for the '
-                          'size of the current page, which is what we return now. '
-                          'Use the `sequence_length` attribute for the size of the '
-                          'entire sequence. '))
+
+    __len__ = deprecated(
+        __len__,
+        'Using len() is deprecated. Use the `length` attribute for the '
+        'size of the current page, which is what we return now. '
+        'Use the `sequence_length` attribute for the size of the '
+        'entire sequence. '
+    )
 
     def __nonzero__(self):
         # Without __nonzero__ a bool(self) would call len(self), which

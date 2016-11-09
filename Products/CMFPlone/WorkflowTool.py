@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
-from zope.component import getMultiAdapter
-
+from AccessControl import getSecurityManager, ClassSecurityInfo
+from Acquisition import aq_base
+from App.class_init import InitializeClass
+from Products.CMFCore.permissions import ManagePortal
 from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.WorkflowTool import WorkflowTool as BaseTool
 from Products.CMFPlone.interfaces import IWorkflowChain
-from ZODB.POSException import ConflictError
-from Acquisition import aq_base
-
-from App.class_init import InitializeClass
-from AccessControl import getSecurityManager, ClassSecurityInfo
-from Products.CMFCore.permissions import ManagePortal
-from Products.DCWorkflow.Transitions import TRIGGER_USER_ACTION
 from Products.CMFPlone.PloneBaseTool import PloneBaseTool
+from Products.DCWorkflow.Transitions import TRIGGER_USER_ACTION
+from ZODB.POSException import ConflictError
+from zope.component import getMultiAdapter
 
 
 class WorkflowTool(PloneBaseTool, BaseTool):
@@ -77,52 +75,53 @@ class WorkflowTool(PloneBaseTool, BaseTool):
 
         return tuple(transitions[:])
 
-    security.declarePublic('getTransitionsFor')
-
+    @security.public
     def getTransitionsFor(self, obj=None, container=None, REQUEST=None):
-        if type(obj) is type([]):
+        if isinstance(obj, list):
             return self.flattenTransitions(objs=obj, container=container)
         result = {}
         chain = self.getChainFor(obj)
         for wf_id in chain:
             wf = self.getWorkflowById(wf_id)
-            if wf is not None:
-                sdef = wf._getWorkflowStateOf(obj)
-                if sdef is not None:
-                    for tid in sdef.transitions:
-                        tdef = wf.transitions.get(tid, None)
-                        if tdef is not None and \
-                           tdef.trigger_type == TRIGGER_USER_ACTION and \
-                           tdef.actbox_name and \
-                           wf._checkTransitionGuard(tdef, obj) and \
-                           not tdef.id in result:
-                            result[tdef.id] = {
-                                'id': tdef.id,
-                                'title': tdef.title,
-                                'title_or_id': tdef.title_or_id(),
-                                'description': tdef.description,
-                                'name': tdef.actbox_name,
-                                'url': tdef.actbox_url %
-                                {'content_url': obj.absolute_url(),
-                                 'portal_url': '',
-                                 'folder_url': ''}}
+            if wf is None:
+                continue
+            sdef = wf._getWorkflowStateOf(obj)
+            if sdef is None:
+                continue
+            for tid in sdef.transitions:
+                tdef = wf.transitions.get(tid, None)
+                if (
+                    tdef is not None and
+                    tdef.trigger_type == TRIGGER_USER_ACTION and
+                    tdef.actbox_name and
+                    wf._checkTransitionGuard(tdef, obj) and
+                    tdef.id not in result
+                ):
+                    result[tdef.id] = {
+                        'id': tdef.id,
+                        'title': tdef.title,
+                        'title_or_id': tdef.title_or_id(),
+                        'description': tdef.description,
+                        'name': tdef.actbox_name,
+                        'url': tdef.actbox_url % {
+                            'content_url': obj.absolute_url(),
+                            'portal_url': '',
+                            'folder_url': ''
+                        }
+                    }
         return tuple(result.values())
 
     def workflows_in_use(self):
         # Gathers all the available workflow chains (sequence
         # of workflow ids).
         in_use = []
-
         in_use.append(self._default_chain)
-
         if self._chains_by_type:
             for chain in self._chains_by_type.values():
                 in_use.append(chain)
-
         return tuple(in_use[:])
 
-    security.declarePublic('getWorklists')
-
+    @security.public
     def getWorklists(self):
         # Instead of manually scraping actions_box, let's
         # query for all worklists in all workflow definitions.
@@ -186,8 +185,7 @@ class WorkflowTool(PloneBaseTool, BaseTool):
 
         return wf_with_wlists
 
-    security.declarePublic('getWorklistsResults')
-
+    @security.public
     def getWorklistsResults(self):
         # Return all the objects concerned by one or more worklists.
         #
@@ -245,8 +243,7 @@ class WorkflowTool(PloneBaseTool, BaseTool):
         results.sort()
         return tuple([obj[1] for obj in results])
 
-    security.declareProtected(ManagePortal, 'getChainForPortalType')
-
+    @security.protected(ManagePortal)
     def getChainForPortalType(self, pt_name, managescreen=0):
         # Get a chain for a specific portal type.
         if pt_name in self._chains_by_type:
@@ -259,14 +256,12 @@ class WorkflowTool(PloneBaseTool, BaseTool):
                 # Return the default chain.
                 return self._default_chain
 
-    security.declareProtected(ManagePortal, 'listWorkflows')
-
+    @security.protected(ManagePortal)
     def listWorkflows(self):
         # Return the list of workflows.
         return self.keys()
 
-    security.declarePublic('getTitleForStateOnType')
-
+    @security.public
     def getTitleForStateOnType(self, state_name, p_type):
         # Returns the workflow state title for a given state name,
         # uses a portal_type to determine which workflow to use.
@@ -282,8 +277,7 @@ class WorkflowTool(PloneBaseTool, BaseTool):
                             or state_name
         return state_name
 
-    security.declarePublic('getTitleForTransitionOnType')
-
+    @security.public
     def getTitleForTransitionOnType(self, trans_name, p_type):
         # Returns the workflow transition title for a given transition name,
         # uses a portal_type to determine which workflow to use.
@@ -299,24 +293,24 @@ class WorkflowTool(PloneBaseTool, BaseTool):
                             or trans_name
         return trans_name
 
-    security.declarePublic('listWFStatesByTitle')
-
+    @security.public
     def listWFStatesByTitle(self, filter_similar=False):
         # Returns the states of all available workflows, optionally filtering
         # out states with matching title and id.
         states = []
-        dup_list = {}
+        dups = set()
         for wf in self.values():
             state_folder = getattr(wf, 'states', None)
-            if state_folder is not None:
-                if not filter_similar:
-                    states.extend(state_folder.values())
-                else:
-                    for state in state_folder.values():
-                        key = '%s:%s' % (state.id, state.title)
-                        if not key in dup_list:
-                            states.append(state)
-                        dup_list[key] = 1
+            if state_folder is None:
+                continue
+            if not filter_similar:
+                states.extend(state_folder.values())
+            else:
+                for state in state_folder.values():
+                    key = '{0}:{1}'.format(state.id, state.title)
+                    if key not in dups:
+                        states.append(state)
+                    dups.update(key)
         return [(s.title, s.getId()) for s in states]
 
     # PLIP 217 Workflow by adaptation
@@ -326,8 +320,7 @@ class WorkflowTool(PloneBaseTool, BaseTool):
         # the portal_type.
         return getMultiAdapter((ob, self), IWorkflowChain)
 
-    security.declarePrivate('listActions')
-
+    @security.public
     def listActions(self, info=None, object=None):
         """ Returns a list of actions to be displayed to the user.
 

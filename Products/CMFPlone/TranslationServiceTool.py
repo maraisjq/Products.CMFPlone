@@ -3,7 +3,6 @@
 This tool requires a translation service which supports
 the translate method and the default parameter.
 """
-
 from AccessControl import ClassSecurityInfo
 from Acquisition import aq_get
 from App.class_init import InitializeClass
@@ -20,6 +19,7 @@ from Products.CMFCore.utils import UniqueObject
 from Products.CMFPlone import PloneLocalesMessageFactory as PLMF
 from Products.CMFPlone.interfaces import ITranslationServiceTool
 from Products.CMFPlone.PloneBaseTool import PloneBaseTool
+from zope.deprecation import deprecate
 from zope.i18n import translate
 from zope.interface import implementer
 from zope.publisher.interfaces.browser import IBrowserRequest
@@ -34,13 +34,12 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
     toolicon = 'skins/plone_images/site_icon.png'
     security = ClassSecurityInfo()
 
-    security.declarePublic('utranslate')
-
+    @security.public
+    @deprecate('Use `translate` instead.')
     def utranslate(self, *args, **kw):
         return self.translate(*args, **kw)
 
-    security.declarePublic('translate')
-
+    @security.public
     def translate(self, msgid, domain=None, mapping=None, context=None,
                   target_language=None, default=None):
         # Translate method for resticted code like skins.
@@ -52,8 +51,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
                          context=context, target_language=target_language,
                          default=default)
 
-    security.declarePublic('encode')
-
+    @security.public
     def encode(self, m, input_encoding=None, output_encoding=None,
                errors='strict'):
         # encode a give unicode type or string type to string type in encoding
@@ -71,8 +69,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
         # return as type string
         return m.encode(output_encoding, errors)
 
-    security.declarePublic('asunicodetype')
-
+    @security.public
     def asunicodetype(self, m, input_encoding=None, errors='strict'):
         # create type unicode from type string
 
@@ -85,8 +82,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
         # return as type unicode
         return unicode(str(m), input_encoding, errors)
 
-    security.declarePublic('ulocalized_time')
-
+    @security.public
     def ulocalized_time(self, time, long_format=None, time_only=None,
                         context=None, domain='plonelocales', request=None):
         # get some context if none is passed
@@ -95,8 +91,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
         return ulocalized_time(time, long_format, time_only,
                                context, domain, request)
 
-    security.declarePublic('day_msgid')
-
+    @security.public
     def day_msgid(self, number, format=None):
         """ Returns the msgid which can be passed to the translation service
         for l10n of weekday names. Format is either None, 'a' or 's'.
@@ -127,8 +122,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
             method = weekdayname_msgid
         return method(number)
 
-    security.declarePublic('month_msgid')
-
+    @security.public
     def month_msgid(self, number, format=None):
         """ Returns the msgid which can be passed to the translation service
         for l10n of month names. Format is either '' or 'a' (long or
@@ -149,8 +143,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
                and monthname_msgid_abbr(number) \
                or monthname_msgid(number)
 
-    security.declarePublic('month_english')
-
+    @security.public
     def month_english(self, number, format=None):
         """ Returns the english name of month by number. Format is either '' or
         'a' (long or abbreviation).
@@ -165,8 +158,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
         """
         return monthname_english(number, format=format)
 
-    security.declarePublic('month')
-
+    @security.public
     def month(self, number, format=None, default=None):
         """ Returns a Message with the month name, that can be translated by
         the TAL engine. Format is either None or 'a' (long or abbreviation).
@@ -178,8 +170,7 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
                 or monthname_msgid(number)
         return PLMF(value, default=default)
 
-    security.declarePublic('weekday_english')
-
+    @security.public
     def weekday_english(self, number, format=None):
         """ Returns the english name of a week by number. Format is
         either None, 'a' or 'p'.
@@ -199,5 +190,6 @@ class TranslationServiceTool(PloneBaseTool, UniqueObject, SimpleItem):
         'Wed.'
         """
         return weekdayname_english(number, format=format)
+
 
 InitializeClass(TranslationServiceTool)

@@ -2,20 +2,18 @@
 """
 Collection of i18n and l10n utility methods.
 """
-import re
-import logging
-
+from Acquisition import aq_acquire
+from DateTime import DateTime
+from DateTime.interfaces import IDateTime
+from plone.registry.interfaces import IRegistry
+from Products.CMFPlone.utils import log
 from zope.component import getUtility
 from zope.i18n import translate
 from zope.i18n.locales import locales
 from zope.publisher.interfaces.browser import IBrowserRequest
 
-from Acquisition import aq_acquire
-from DateTime import DateTime
-from DateTime.interfaces import IDateTime
-
-from plone.registry.interfaces import IRegistry
-from Products.CMFPlone.utils import log
+import logging
+import re
 
 # these are taken from PTS, used for format interpolation
 NAME_RE = r"[a-zA-Z][a-zA-Z0-9_]*"
@@ -25,26 +23,12 @@ datetime_formatvariables = ('H', 'I', 'm', 'd', 'M', 'p', 'S', 'Y', 'y', 'Z')
 name_formatvariables = ('a', 'A', 'b', 'B')
 
 ENGLISH_NAMES = {}
-try:
-    from DateTime.DateTime import _DAYS
-    ENGLISH_NAMES['_days'] = _DAYS
-    from DateTime.DateTime import _DAYS_A
-    ENGLISH_NAMES['_days_a'] = _DAYS_A
-    from DateTime.DateTime import _DAYS_P
-    ENGLISH_NAMES['_days_p'] = _DAYS_P
-    from DateTime.DateTime import _MONTHS
-    ENGLISH_NAMES['_months'] = _MONTHS
-    from DateTime.DateTime import _MONTHS_A
-    ENGLISH_NAMES['_months_a'] = _MONTHS_A
-    from DateTime.DateTime import _MONTHS_P
-    ENGLISH_NAMES['_months_p'] = _MONTHS_P
-except ImportError:
-    ENGLISH_NAMES['_days'] = DateTime._days
-    ENGLISH_NAMES['_days_a'] = DateTime._days_a
-    ENGLISH_NAMES['_days_p'] = DateTime._days_p
-    ENGLISH_NAMES['_months'] = DateTime._months
-    ENGLISH_NAMES['_months_a'] = DateTime._months_a
-    ENGLISH_NAMES['_months_p'] = DateTime._months_p
+ENGLISH_NAMES['_days'] = DateTime._DAYS
+ENGLISH_NAMES['_days_a'] = DateTime._DAYS_A
+ENGLISH_NAMES['_days_p'] = DateTime._DAYS_P
+ENGLISH_NAMES['_months'] = DateTime._MONTHS
+ENGLISH_NAMES['_months_a'] = DateTime._MONTHS_A
+ENGLISH_NAMES['_months_p'] = DateTime._MONTHS_P
 
 # The following are helper methods to change the default date and time formats
 # for a specific locale. These locale dependent formats are used in the

@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
-from zope.interface import Interface, implementer
-from zope.component import adapter
 from Acquisition import aq_base
 from Products.CMFCore.interfaces import IWorkflowTool
 from Products.CMFPlone.interfaces import IWorkflowChain
+from zope.component import adapter
+from zope.interface import Interface, implementer
 
 
 @adapter(Interface, IWorkflowTool)
 @implementer(IWorkflowChain)
 def ToolWorkflowChain(context, workflow_tool):
-    """Looks up the workflow chain by portal type suing a mapping
+    """Looks up the workflow chain by portal type using a mapping
     stored on the tool::
 
-      >>> from Products.CMFPlone.tests.dummy import DummyContent, DummyWorkflowTool
+      >>> from Products.CMFPlone.tests.dummy import DummyContent
+      >>> from Products.CMFPlone.tests.dummy import DummyWorkflowTool
       >>> tool = DummyWorkflowTool()
       >>> content = DummyContent(id='dummy', portal_type='DummyType')
 

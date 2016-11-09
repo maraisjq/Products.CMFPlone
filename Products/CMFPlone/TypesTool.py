@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
-
 from Products.CMFCore.ActionInformation import ActionInfo
 from Products.CMFCore.interfaces import IAction
 from Products.CMFCore.TypesTool import TypesTool as BaseTool
-
 from Products.CMFPlone.PloneBaseTool import PloneBaseTool
 
 
@@ -15,8 +13,7 @@ class TypesTool(PloneBaseTool, BaseTool):
     security = ClassSecurityInfo()
     toolicon = 'skins/plone_images/document_icon.png'
 
-    security.declarePublic('listTypeTitles')
-
+    @security.public
     def listTypeTitles(self, container=None):
         # Return a dictionary of id/Title combinations.
         typenames = {}
@@ -27,8 +24,7 @@ class TypesTool(PloneBaseTool, BaseTool):
 
         return typenames
 
-    security.declarePrivate('listActions')
-
+    @security.private
     def listActions(self, info=None, object=None, category=None):
         # List all the actions defined by a provider.
         actions = []
@@ -50,8 +46,7 @@ class TypesTool(PloneBaseTool, BaseTool):
 
         return actions
 
-    security.declarePublic('listActionInfos')
-
+    @security.public
     def listActionInfos(self, action_chain=None, object=None,
                         check_visibility=1, check_permissions=1,
                         check_condition=1, max=-1, category=None):
@@ -89,6 +84,7 @@ class TypesTool(PloneBaseTool, BaseTool):
             if max + 1 and len(action_infos) >= max:
                 break
         return action_infos
+
 
 TypesTool.__doc__ = BaseTool.__doc__
 

@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
-from App.class_init import InitializeClass
 from AccessControl import ClassSecurityInfo
-from Products.CMFPlone.interfaces import IPloneBaseTool
 from Acquisition import aq_base
-from Acquisition import aq_parent
 from Acquisition import aq_inner
-
+from Acquisition import aq_parent
+from App.class_init import InitializeClass
 from Products.CMFCore import Expression
+from Products.CMFCore.ActionInformation import oai
 from Products.CMFCore.utils import getToolByName
-
-from zope.interface import implementer
+from Products.CMFPlone.interfaces import IPloneBaseTool
 from zope.component import getMultiAdapter
+from zope.interface import implementer
 
 TempFolderClass = None
 
 # getOAI() and getExprContext copied from CMF 1.5.1+cvs
 # Copyright (c) 2002 Zope Corporation and Contributors. All Rights Reserved.
 # ZPL 2.1
-from Products.CMFCore.ActionInformation import oai
 
 
 def initializeTFC():
@@ -148,7 +146,7 @@ def getExprContext(context, object=None):
 
 
 @implementer(IPloneBaseTool)
-class PloneBaseTool:
+class PloneBaseTool(object):
     """Base class of all tools used in CMFPlone and Plone Core
     """
 

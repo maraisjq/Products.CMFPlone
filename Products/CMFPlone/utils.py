@@ -14,7 +14,6 @@ from cgi import escape
 from DateTime import DateTime
 from DateTime.interfaces import DateTimeError
 from log import log
-from log import log_deprecated
 from log import log_exc
 from OFS.CopySupport import CopyError
 from OFS.CopySupport import eNotSupported
@@ -24,8 +23,8 @@ from os.path import split
 from plone.i18n.normalizer.interfaces import IIDNormalizer
 from plone.registry.interfaces import IRegistry
 from Products.CMFCore.permissions import ManageUsers
-from Products.CMFCore.utils import ToolInit as CMFCoreToolInit
 from Products.CMFCore.utils import getToolByName
+from Products.CMFCore.utils import ToolInit as CMFCoreToolInit
 from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.interfaces.controlpanel import IImagingSchema
 from Products.CMFPlone.interfaces.siteroot import IPloneSiteRoot
@@ -40,7 +39,7 @@ from zope.component import queryUtility
 from zope.component.hooks import getSite
 from zope.component.interfaces import ISite
 from zope.deferredimport import deprecated as deprecated_import
-from zope.deprecation import deprecated
+from zope.deprecation import deprecate
 from zope.i18n import translate
 from zope.interface import implementedBy
 from zope.publisher.interfaces.browser import IBrowserRequest
@@ -199,11 +198,13 @@ def pretty_title_or_id(context, obj, empty_value=_marker):
     return empty_value
 
 
+@deprecate(
+    '`getSiteEncoding` is deprecated. '
+    'Plone only supports UTF-8 currently. '
+    'This method always returns "utf-8"'
+)
 def getSiteEncoding(context):
     return 'utf-8'
-deprecated('getSiteEncoding',
-           ('`getSiteEncoding` is deprecated. Plone only supports UTF-8 '
-            'currently. This method always returns "utf-8"'))
 
 
 # XXX portal_utf8 and utf8_portal probably can go away
@@ -360,6 +361,7 @@ def safeToInt(value, default=0):
         return int(value)
     except (ValueError, TypeError):
         return default
+
 
 release_levels = ('alpha', 'beta', 'candidate', 'final')
 rl_abbr = {'a': 'alpha', 'b': 'beta', 'rc': 'candidate'}
@@ -603,9 +605,16 @@ def _getSecurity(klass, create=True):
     return security
 
 
+@deprecate(
+    'utils.isLinked is deprecated, you should use '
+    'plone.app.linkintegrity.utils.hasIncomingLinks. '
+    'Remove in Plone 5.2'
+)
 def isLinked(obj):
-    """Check if the given content object is linked from another one."""
-    log_deprecated("utils.isLinked is deprecated, you should use plone.app.linkintegrity.utils.hasIncomingLinks")  # noqa
+    """Check if the given content object is linked from another one.
+
+    DEPRECATED
+    """
     from plone.app.linkintegrity.utils import hasIncomingLinks
     return hasIncomingLinks(obj)
 

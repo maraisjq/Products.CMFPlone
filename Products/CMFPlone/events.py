@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implementer
-from zope.component import getMultiAdapter
-from zope.component.interfaces import ObjectEvent
-from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.utils import get_installer
+from zope.component.interfaces import ObjectEvent
+from zope.interface import implementer
 
 from interfaces import ISiteManagerCreatedEvent
 from interfaces import IReorderedEvent
@@ -11,7 +9,6 @@ from interfaces import IReorderedEvent
 
 @implementer(ISiteManagerCreatedEvent)
 class SiteManagerCreatedEvent(ObjectEvent):
-
     pass
 
 

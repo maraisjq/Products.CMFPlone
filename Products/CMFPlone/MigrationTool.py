@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
-import logging
-import sys
-from StringIO import StringIO
-
-import pkg_resources
-import transaction
-from zope.interface import implementer
-
 from AccessControl import ClassSecurityInfo
 from AccessControl.requestmethod import postonly
 from App.class_init import InitializeClass
-import Globals
 from OFS.SimpleItem import SimpleItem
-from ZODB.POSException import ConflictError
-
+from Products.CMFCore.permissions import ManagePortal
 from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.utils import registerToolInterface
 from Products.CMFCore.utils import UniqueObject
-from Products.CMFCore.permissions import ManagePortal
-
 from Products.CMFPlone.factory import _DEFAULT_PROFILE
 from Products.CMFPlone.interfaces import IMigrationTool
 from Products.CMFPlone.PloneBaseTool import PloneBaseTool
+from StringIO import StringIO
+from ZODB.POSException import ConflictError
+from zope.interface import implementer
+
+import Globals
+import logging
+import pkg_resources
+import sys
+import transaction
 
 logger = logging.getLogger('plone.app.upgrade')
 _upgradePaths = {}
@@ -122,8 +119,7 @@ class MigrationTool(PloneBaseTool, UniqueObject, SimpleItem):
 
     security = ClassSecurityInfo()
 
-    security.declareProtected(ManagePortal, 'getInstanceVersion')
-
+    @security.protected(ManagePortal)
     def getInstanceVersion(self):
         # The version this instance of plone is on.
         setup = getToolByName(self, 'portal_setup')
@@ -150,16 +146,14 @@ class MigrationTool(PloneBaseTool, UniqueObject, SimpleItem):
             self.setInstanceVersion(version)
         return version
 
-    security.declareProtected(ManagePortal, 'setInstanceVersion')
-
+    @security.protected(ManagePortal)
     def setInstanceVersion(self, version):
         # The version this instance of plone is on.
         setup = getToolByName(self, 'portal_setup')
         setup.setLastVersionForProfile(_DEFAULT_PROFILE, version)
         self._version = False
 
-    security.declareProtected(ManagePortal, 'getFileSystemVersion')
-
+    @security.protected(ManagePortal)
     def getFileSystemVersion(self):
         # The version this instance of plone is on.
         setup = getToolByName(self, 'portal_setup')
@@ -169,21 +163,18 @@ class MigrationTool(PloneBaseTool, UniqueObject, SimpleItem):
             pass
         return None
 
-    security.declareProtected(ManagePortal, 'getSoftwareVersion')
-
+    @security.protected(ManagePortal)
     def getSoftwareVersion(self):
         # The software version.
         dist = pkg_resources.get_distribution('Products.CMFPlone')
         return dist.version
 
-    security.declareProtected(ManagePortal, 'needUpgrading')
-
+    @security.protected(ManagePortal)
     def needUpgrading(self):
         # Need upgrading?
         return self.getInstanceVersion() != self.getFileSystemVersion()
 
-    security.declareProtected(ManagePortal, 'coreVersions')
-
+    @security.protected(ManagePortal)
     def coreVersions(self):
         # Useful core information.
         vars = {}
@@ -214,28 +205,24 @@ class MigrationTool(PloneBaseTool, UniqueObject, SimpleItem):
 
         return vars
 
-    security.declareProtected(ManagePortal, 'coreVersionsList')
-
+    @security.protected(ManagePortal)
     def coreVersionsList(self):
         # Useful core information.
         res = self.coreVersions().items()
         res.sort()
         return res
 
-    security.declareProtected(ManagePortal, 'needUpdateRole')
-
+    @security.protected(ManagePortal)
     def needUpdateRole(self):
         # Do roles need to be updated?
         return self._needUpdateRole
 
-    security.declareProtected(ManagePortal, 'needRecatalog')
-
+    @security.protected(ManagePortal)
     def needRecatalog(self):
         # Does this thing now need recataloging?
         return self._needRecatalog
 
-    security.declareProtected(ManagePortal, 'upgrade')
-
+    @security.protected(ManagePortal)
     def upgrade(self, REQUEST=None, dry_run=None, swallow_errors=True):
         # Perform the upgrade.
         setup = getToolByName(self, 'portal_setup')
@@ -343,6 +330,7 @@ class MigrationTool(PloneBaseTool, UniqueObject, SimpleItem):
 def registerUpgradePath(oldversion, newversion, function):
     """ Basic register func """
     pass
+
 
 InitializeClass(MigrationTool)
 registerToolInterface('portal_migration', IMigrationTool)

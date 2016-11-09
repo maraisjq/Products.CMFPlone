@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implementer
-from Products.PageTemplates.interfaces import IUnicodeEncodingConflictResolver
-
 from Products.CMFPlone.patches.unicodehacks import _unicode_replace
+from Products.PageTemplates.interfaces import IUnicodeEncodingConflictResolver
+from zope.interface import implementer
 
 
 @implementer(IUnicodeEncodingConflictResolver)
@@ -14,4 +13,5 @@ class UTF8EncodingConflictResolver(object):
     def resolve(self, context, text, expression):
         return _unicode_replace(text)
 
-UTF8EncodingConflictResolver = UTF8EncodingConflictResolver()
+
+utf8_unicode_encoding_conflict_resolver = UTF8EncodingConflictResolver()

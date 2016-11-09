@@ -9,7 +9,7 @@
 
     <utility
         provides="Products.PageTemplates.interfaces.IUnicodeEncodingConflictResolver"
-        component="Products.CMFPlone.unicodeconflictresolver.UTF8EncodingConflictResolver"
+        component="Products.CMFPlone.unicodeconflictresolver.utf8_unicode_encoding_conflict_resolver"
         />
 
     <!-- include plone plugins with z3c.autoinclude -->

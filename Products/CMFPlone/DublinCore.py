@@ -20,8 +20,6 @@ from App.class_init import InitializeClass
 from App.special_dtml import DTMLFile
 from DateTime.DateTime import DateTime
 from OFS.PropertyManager import PropertyManager
-from zope.interface import implementer
-
 from Products.CMFCore.interfaces import ICatalogableDublinCore
 from Products.CMFCore.interfaces import IDublinCore
 from Products.CMFCore.interfaces import IMutableDublinCore
@@ -29,6 +27,7 @@ from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.permissions import ModifyPortalContent
 from Products.CMFPlone.permissions import View
 from Products.CMFPlone.utils import WWW_DIR
+from zope.interface import implementer
 
 _marker = []
 
@@ -46,7 +45,7 @@ def seq_strip(seq, stripper=lambda x: x.strip()):
     if isinstance(seq, tuple):
         return tuple(map(stripper, seq))
 
-    raise ValueError, "%s of unsupported sequencetype %s" % (seq, type(seq))
+    raise ValueError('%s of unsupported sequencetype %s' % (seq, type(seq)))
 
 
 def tuplize(valueName, value, splitter=lambda x: x.split()):
@@ -60,7 +59,7 @@ def tuplize(valueName, value, splitter=lambda x: x.split()):
     if isinstance(value, basestring):
         return seq_strip(tuple(splitter(value)))
 
-    raise ValueError, "%s of unsupported type" % valueName
+    raise ValueError('%s of unsupported type' % valueName)
 
 
 @implementer(IDublinCore, ICatalogableDublinCore, IMutableDublinCore)
@@ -71,14 +70,19 @@ class DefaultDublinCoreImpl(PropertyManager):
 
     security = ClassSecurityInfo()
 
-    def __init__(self, title='', subject=(), description='', contributors=(), effective_date=None, expiration_date=None, format='text/html', language='', rights=''
-                 ):
+    def __init__(
+        self, title='', subject=(), description='', contributors=(),
+        effective_date=None, expiration_date=None, format='text/html',
+        language='', rights=''
+    ):
         now = DateTime()
         self.creation_date = now
         self.modification_date = now
         self.creators = ()
-        self._editMetadata(title, subject, description, contributors, effective_date, expiration_date, format, language, rights
-                           )
+        self._editMetadata(
+            title, subject, description, contributors, effective_date,
+            expiration_date, format, language, rights
+        )
 
     #
     #  Set-modification-date-related methods.
@@ -88,16 +92,14 @@ class DefaultDublinCoreImpl(PropertyManager):
     # Class variable default for an upgrade.
     modification_date = None
 
-    security.declarePrivate('notifyModified')
-
+    @security.private
     def notifyModified(self):
         # Take appropriate action after the resource has been modified.
         # Update creators and modification_date.
         self.addCreator()
         self.setModificationDate()
 
-    security.declareProtected(ModifyPortalContent, 'addCreator')
-
+    @security.declareProtected(ModifyPortalContent)
     def addCreator(self, creator=None):
         # Add creator to Dublin Core creators.
         if creator is None:
@@ -105,11 +107,10 @@ class DefaultDublinCoreImpl(PropertyManager):
             creator = user and user.getId()
 
         # call self.listCreators() to make sure self.creators exists
-        if creator and not creator in self.listCreators():
+        if creator and creator not in self.listCreators():
             self.creators = self.creators + (creator, )
 
-    security.declareProtected(ModifyPortalContent, 'setModificationDate')
-
+    @security.declareProtected(ModifyPortalContent)
     def setModificationDate(self, modification_date=None):
         # Set the date when the resource was last modified.
         # When called without an argument, sets the date to now.
@@ -121,14 +122,12 @@ class DefaultDublinCoreImpl(PropertyManager):
     #
     #  DublinCore interface query methods
     #
-    security.declareProtected(View, 'Title')
-
+    @security.declareProtected(View)
     def Title(self):
         # Dublin Core Title element - resource name.
         return self.title
 
-    security.declareProtected(View, 'listCreators')
-
+    @security.declareProtected(View)
     def listCreators(self):
         # List Dublin Core Creator elements - resource authors.
         if not hasattr(aq_base(self), 'creators'):
@@ -140,27 +139,23 @@ class DefaultDublinCoreImpl(PropertyManager):
                 self.creators = ()
         return self.creators
 
-    security.declareProtected(View, 'Creator')
-
+    @security.declareProtected(View)
     def Creator(self):
         # Dublin Core Creator element - resource author.
         creators = self.listCreators()
         return creators and creators[0] or ''
 
-    security.declareProtected(View, 'Subject')
-
+    @security.declareProtected(View)
     def Subject(self):
         # Dublin Core Subject element - resource keywords.
         return getattr(self, 'subject', ())  # compensate for *old* content
 
-    security.declareProtected(View, 'Description')
-
+    @security.declareProtected(View)
     def Description(self):
         # Dublin Core Description element - resource summary.
         return self.description
 
-    security.declareProtected(View, 'Publisher')
-
+    @security.declareProtected(View)
     def Publisher(self):
         # Dublin Core Publisher element - resource publisher.
         tool = getToolByName(self, 'portal_metadata', None)
@@ -170,20 +165,17 @@ class DefaultDublinCoreImpl(PropertyManager):
 
         return 'No publisher'
 
-    security.declareProtected(View, 'listContributors')
-
+    @security.declareProtected(View)
     def listContributors(self):
         # Dublin Core Contributor elements - resource collaborators.
         return self.contributors
 
-    security.declareProtected(View, 'Contributors')
-
+    @security.declareProtected(View)
     def Contributors(self):
         # Deprecated alias of listContributors.
         return self.listContributors()
 
-    security.declareProtected(View, 'Date')
-
+    @security.declareProtected(View)
     def Date(self, zone=None):
         # Dublin Core Date element - default date.
         if zone is None:
@@ -194,8 +186,7 @@ class DefaultDublinCoreImpl(PropertyManager):
             date = self.modified()
         return date.toZone(zone).ISO()
 
-    security.declareProtected(View, 'CreationDate')
-
+    @security.declareProtected(View)
     def CreationDate(self, zone=None):
         # Dublin Core Date element - date resource created.
         if zone is None:
@@ -206,8 +197,7 @@ class DefaultDublinCoreImpl(PropertyManager):
         else:
             return 'Unknown'
 
-    security.declareProtected(View, 'EffectiveDate')
-
+    @security.declareProtected(View)
     def EffectiveDate(self, zone=None):
         # Dublin Core Date element - date resource becomes effective.
         if zone is None:
@@ -215,8 +205,7 @@ class DefaultDublinCoreImpl(PropertyManager):
         ed = getattr(self, 'effective_date', None)
         return ed and ed.toZone(zone).ISO() or 'None'
 
-    security.declareProtected(View, 'ExpirationDate')
-
+    @security.declareProtected(View)
     def ExpirationDate(self, zone=None):
         # Dublin Core Date element - date resource expires.
         if zone is None:
@@ -224,43 +213,37 @@ class DefaultDublinCoreImpl(PropertyManager):
         ed = getattr(self, 'expiration_date', None)
         return ed and ed.toZone(zone).ISO() or 'None'
 
-    security.declareProtected(View, 'ModificationDate')
-
+    @security.declareProtected(View)
     def ModificationDate(self, zone=None):
         # Dublin Core Date element - date resource last modified.
         if zone is None:
             zone = _zone
         return self.modified().toZone(zone).ISO()
 
-    security.declareProtected(View, 'Type')
-
+    @security.declareProtected(View)
     def Type(self):
         # Dublin Core Type element - resource type.
         ti = self.getTypeInfo()
         return ti is not None and ti.Title() or 'Unknown'
 
-    security.declareProtected(View, 'Format')
-
+    @security.declareProtected(View)
     def Format(self):
         # Dublin Core Format element - resource format.
         return self.format
 
-    security.declareProtected(View, 'Identifier')
-
+    @security.declareProtected(View)
     def Identifier(self):
         # Dublin Core Identifier element - resource ID.
         # XXX: fixme using 'portal_metadata' (we need to prepend the
         #      right prefix to self.getPhysicalPath().
         return self.absolute_url()
 
-    security.declareProtected(View, 'Language')
-
+    @security.declareProtected(View)
     def Language(self):
         # Dublin Core Language element - resource language.
         return self.language
 
-    security.declareProtected(View, 'Rights')
-
+    @security.declareProtected(View)
     def Rights(self):
         # Dublin Core Rights element - resource copyright.
         return self.rights
@@ -275,29 +258,30 @@ class DefaultDublinCoreImpl(PropertyManager):
 
     __FLOOR_DATE = DateTime(1970, 0)  # always effective
 
-    security.declareProtected(View, 'isEffective')
-
+    @security.declareProtected(View)
     def isEffective(self, date):
         # Is the date within the resource's effective range?
-        pastEffective = (self.effective_date is None
-                         or self.effective_date <= date)
-        beforeExpiration = (self.expiration_date is None
-                            or self.expiration_date >= date)
+        pastEffective = (
+            self.effective_date is None or
+            self.effective_date <= date
+        )
+        beforeExpiration = (
+            self.expiration_date is None or
+            self.expiration_date >= date
+        )
         return pastEffective and beforeExpiration
 
     #
     #  CatalogableDublinCore methods
     #
-    security.declareProtected(View, 'created')
-
+    @security.declareProtected(View)
     def created(self):
         # Dublin Core Date element - date resource created.
         # allow for non-existent creation_date, existed always
         date = getattr(self, 'creation_date', None)
         return date is None and self.__FLOOR_DATE or date
 
-    security.declareProtected(View, 'effective')
-
+    @security.declareProtected(View)
     def effective(self):
         # Dublin Core Date element - date resource becomes effective.
         marker = []
@@ -308,15 +292,13 @@ class DefaultDublinCoreImpl(PropertyManager):
 
     __CEILING_DATE = DateTime(2500, 0)  # never expires
 
-    security.declareProtected(View, 'expires')
-
+    @security.declareProtected(View)
     def expires(self):
         # Dublin Core Date element - date resource expires.
         date = getattr(self, 'expiration_date', None)
         return date is None and self.__CEILING_DATE or date
 
-    security.declareProtected(View, 'modified')
-
+    @security.declareProtected(View)
     def modified(self):
         # Dublin Core Date element - date resource last modified.
         date = self.modification_date
@@ -326,8 +308,7 @@ class DefaultDublinCoreImpl(PropertyManager):
             self.modification_date = date
         return date
 
-    security.declareProtected(View, 'getMetadataHeaders')
-
+    @security.declareProtected(View)
     def getMetadataHeaders(self):
         # Return RFC-822-style headers.
         hdrlist = []
@@ -347,8 +328,7 @@ class DefaultDublinCoreImpl(PropertyManager):
     #
     #  MutableDublinCore methods
     #
-    security.declarePrivate('_datify')
-
+    @security.private
     def _datify(self, attrib):
         if attrib == 'None':
             attrib = None
@@ -357,63 +337,54 @@ class DefaultDublinCoreImpl(PropertyManager):
                 attrib = DateTime(attrib)
         return attrib
 
-    security.declareProtected(ModifyPortalContent, 'setTitle')
-
+    @security.protected(ModifyPortalContent)
     def setTitle(self, title):
         # Set Dublin Core Title element - resource name.
         self.title = title
 
-    security.declareProtected(ModifyPortalContent, 'setCreators')
-
+    @security.protected(ModifyPortalContent)
     def setCreators(self, creators):
         # Set Dublin Core Creator elements - resource authors.
         self.creators = tuplize('creators', creators)
 
-    security.declareProtected(ModifyPortalContent, 'setSubject')
-
+    @security.protected(ModifyPortalContent)
     def setSubject(self, subject):
         # Set Dublin Core Subject element - resource keywords.
         self.subject = tuplize('subject', subject)
 
-    security.declareProtected(ModifyPortalContent, 'setDescription')
-
+    @security.protected(ModifyPortalContent)
     def setDescription(self, description):
         # Set Dublin Core Description element - resource summary.
         self.description = description
 
-    security.declareProtected(ModifyPortalContent, 'setContributors')
-
+    @security.protected(ModifyPortalContent)
     def setContributors(self, contributors):
         # Set Dublin Core Contributor elements - resource collaborators.
-        semi_split = lambda s: map(lambda x: x.strip(), s.split(';'))
+        def semi_split(s):
+            return map(lambda x: x.strip(), s.split(';'))
         self.contributors = tuplize('contributors', contributors, semi_split)
 
-    security.declareProtected(ModifyPortalContent, 'setEffectiveDate')
-
+    @security.protected(ModifyPortalContent)
     def setEffectiveDate(self, effective_date):
         # Set Dublin Core Date element - date resource becomes effective.
         self.effective_date = self._datify(effective_date)
 
-    security.declareProtected(ModifyPortalContent, 'setExpirationDate')
-
+    @security.protected(ModifyPortalContent)
     def setExpirationDate(self, expiration_date):
         # Set Dublin Core Date element - date resource expires.
         self.expiration_date = self._datify(expiration_date)
 
-    security.declareProtected(ModifyPortalContent, 'setFormat')
-
+    @security.protected(ModifyPortalContent)
     def setFormat(self, format):
         # Set Dublin Core Format element - resource format.
         self.format = format
 
-    security.declareProtected(ModifyPortalContent, 'setLanguage')
-
+    @security.protected(ModifyPortalContent)
     def setLanguage(self, language):
         # Set Dublin Core Language element - resource language.
         self.language = language
 
-    security.declareProtected(ModifyPortalContent, 'setRights')
-
+    @security.protected(ModifyPortalContent)
     def setRights(self, rights):
         # Set Dublin Core Rights element - resource copyright.
         self.rights = rights
@@ -422,10 +393,12 @@ class DefaultDublinCoreImpl(PropertyManager):
     #  Management tab methods
     #
 
-    security.declarePrivate('_editMetadata')
-
-    def _editMetadata(self, title=_marker, subject=_marker, description=_marker, contributors=_marker, effective_date=_marker, expiration_date=_marker, format=_marker, language=_marker, rights=_marker
-                      ):
+    @security.private
+    def _editMetadata(
+        self, title=_marker, subject=_marker, description=_marker,
+        contributors=_marker, effective_date=_marker, expiration_date=_marker,
+        format=_marker, language=_marker, rights=_marker
+    ):
         # Update the editable metadata for this resource.
         if title is not _marker:
             self.setTitle(title)
@@ -451,28 +424,42 @@ class DefaultDublinCoreImpl(PropertyManager):
 
     security.declareProtected(ModifyPortalContent, 'manage_editMetadata')
 
-    def manage_editMetadata(self, title, subject, description, contributors, effective_date, expiration_date, format, language, rights, REQUEST
-                            ):
+    def manage_editMetadata(
+        self, title, subject, description, contributors, effective_date,
+        expiration_date, format, language, rights, REQUEST
+    ):
         """ Update metadata from the ZMI.
         """
-        self._editMetadata(title, subject, description, contributors, effective_date, expiration_date, format, language, rights
-                           )
-        REQUEST['RESPONSE'].redirect(self.absolute_url()
-                                     + '/manage_metadata'
-                                     + '?manage_tabs_message=Metadata+updated.')
+        self._editMetadata(
+            title, subject, description, contributors, effective_date,
+            expiration_date, format, language, rights
+        )
+        REQUEST['RESPONSE'].redirect(
+            self.absolute_url() +
+            +'/manage_metadata'
+            '?manage_tabs_message=Metadata+updated.'
+        )
 
     security.declareProtected(ModifyPortalContent, 'editMetadata')
 
-    def editMetadata(self, title='', subject=(), description='', contributors=(), effective_date=None, expiration_date=None, format='text/html', language='en-US', rights=''
-                     ):
+    def editMetadata(
+        self, title='', subject=(), description='', contributors=(),
+        effective_date=None, expiration_date=None, format='text/html',
+        language='en-US', rights=''
+    ):
         # Need to add check for webDAV locked resource for TTW methods.
         # As per bug #69, we can't assume they use the webdav
         # locking interface, and fail gracefully if they don't.
         if hasattr(self, 'failIfLocked'):
             self.failIfLocked()
 
-        self._editMetadata(title=title, subject=subject, description=description, contributors=contributors, effective_date=effective_date, expiration_date=expiration_date, format=format, language=language, rights=rights
-                           )
+        self._editMetadata(
+            title=title, subject=subject, description=description,
+            contributors=contributors, effective_date=effective_date,
+            expiration_date=expiration_date, format=format, language=language,
+            rights=rights
+        )
         self.reindexObject()
+
 
 InitializeClass(DefaultDublinCoreImpl)

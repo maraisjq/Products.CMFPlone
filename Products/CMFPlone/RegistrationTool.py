@@ -14,18 +14,19 @@ from Products.CMFCore.permissions import AddPortalMember
 from Products.CMFCore.RegistrationTool import RegistrationTool as BaseTool
 from Products.CMFCore.utils import _checkPermission
 from Products.CMFCore.utils import getToolByName
+from Products.CMFPlone import PloneMessageFactory as _
 from Products.CMFPlone.interfaces import ISecuritySchema
 from Products.CMFPlone.permissions import ManagePortal
 from Products.CMFPlone.PloneBaseTool import PloneBaseTool
 from Products.CMFPlone.PloneTool import EMAIL_RE
-from Products.CMFPlone import PloneMessageFactory as _
-from Products.PluggableAuthService.interfaces.authservice import IPluggableAuthService
+from Products.PluggableAuthService.interfaces.authservice import IPluggableAuthService  # noqa
 from Products.PluggableAuthService.interfaces.plugins import IValidationPlugin
 from Products.PluggableAuthService.permissions import SetOwnPassword
 from smtplib import SMTPException, SMTPRecipientsRefused
-from zope.component import getUtility
 from zope.component import getMultiAdapter
+from zope.component import getUtility
 from zope.schema import ValidationError
+
 import random
 import re
 
@@ -44,6 +45,7 @@ def getValidPasswordChars():
     for i in range(2, 10):
         password_chars.append(chr(ord('0') + i))
     return password_chars
+
 
 password_chars = getValidPasswordChars()
 
@@ -78,6 +80,7 @@ def get_member_by_login_name(context, login_name, raise_exceptions=True):
     if member is None and raise_exceptions:
         raise ValueError(_(u'The username you entered could not be found.'))
     return member
+
 
 # seed the random number generator
 random.seed()
@@ -149,11 +152,10 @@ class RegistrationTool(PloneBaseTool, BaseTool):
                 password += password_chars[ord(d[i]) % nchars]
             return password
 
-    security.declarePublic('isValidEmail')
-
+    @security.public
     def isValidEmail(self, email):
         # Checks for valid email.
-        if EMAIL_RE.search(email) == None:
+        if EMAIL_RE.search(email) is None:
             return 0
         try:
             checkEmailAddress(email)
@@ -165,15 +167,19 @@ class RegistrationTool(PloneBaseTool, BaseTool):
     #
     #   'portal_registration' interface
     #
-    security.declarePublic('testPasswordValidity')
-
+    @security.public
     def testPasswordValidity(self, password, confirm=None):
         # Verify that the password satisfies the portal's requirements.
         #
         # o If the password is valid, return None.
         # o If not, return a string explaining why.
         err = self.pasValidation('password', password)
-        if err and (password == '' or not _checkPermission(ManagePortal, self)):
+        if (
+            err and (
+                password == '' or
+                not _checkPermission(ManagePortal, self)
+            )
+        ):
             return err
 
         if confirm is not None and confirm != password:
@@ -198,7 +204,11 @@ class RegistrationTool(PloneBaseTool, BaseTool):
             # We will assume that the PASPlugin returns a list of error
             # strings that have already been translated.
             # We just need to join them in an i18n friendly way
-            for error in [info['error'] for info in errors if info['id'] == property]:
+            info_errors = [
+                info['error'] for info in errors
+                if info['id'] == property
+            ]
+            for error in info_errors:
                 if not err:
                     err = error
                 else:
@@ -210,8 +220,7 @@ class RegistrationTool(PloneBaseTool, BaseTool):
         else:
             return err
 
-    security.declarePublic('testPropertiesValidity')
-
+    @security.public
     def testPropertiesValidity(self, props, member=None):
         # Verify that the properties supplied satisfy portal's requirements.
 
@@ -260,8 +269,7 @@ class RegistrationTool(PloneBaseTool, BaseTool):
 
         return None
 
-    security.declareProtected(AddPortalMember, 'isMemberIdAllowed')
-
+    @security.protected(AddPortalMember)
     def isMemberIdAllowed(self, id):
         if len(id) < 1 or id == 'Anonymous User':
             return 0
@@ -301,23 +309,20 @@ class RegistrationTool(PloneBaseTool, BaseTool):
 
         return 1
 
-    security.declarePublic('generatePassword')
-
+    @security.public
     def generatePassword(self):
         # Generate a strong default password. The user never gets sent
         # this so we can make it very long.
 
         return self.getPassword(56)
 
-    security.declarePublic('generateResetCode')
-
+    @security.public
     def generateResetCode(self, salt, length=14):
         # Generates a reset code which is guaranteed to return the
         # same value for a given length and salt, every time.
         return self.getPassword(length, salt)
 
-    security.declarePublic('mailPassword')
-
+    @security.public
     def mailPassword(self, login, REQUEST, immediate=False):
         """ Wrapper around mailPassword """
         membership = getToolByName(self, 'portal_membership')
@@ -396,7 +401,7 @@ class RegistrationTool(PloneBaseTool, BaseTool):
             (self, self.REQUEST), name='mail_password_response')
         return mail_password_response()
 
-    security.declarePublic('registeredNotify')
+    @security.public
     def registeredNotify(self, new_member_id):
         # Wrapper around registeredNotify.
         membership = getToolByName(self, 'portal_membership')
@@ -444,8 +449,7 @@ class RegistrationTool(PloneBaseTool, BaseTool):
             (self, self.REQUEST), name='mail_password_response')
         return mail_password_response()
 
-    security.declareProtected(ManagePortal, 'editMember')
-
+    @security.protected(ManagePortal)
     @postonly
     def editMember(self, member_id, properties=None, password=None,
                    roles=None, domains=None, REQUEST=None):

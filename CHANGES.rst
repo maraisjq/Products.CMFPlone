@@ -157,6 +157,9 @@ Bug fixes:
 - Move some tests from ZopeTestCase to plone.app.testing.
   [gforcada]
 
+- Cleanup and readability: pep8, isort and other. 
+  [jensens]
+
 5.1a2 (2016-08-19)
 ------------------
 
