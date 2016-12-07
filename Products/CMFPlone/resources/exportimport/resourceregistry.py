@@ -41,7 +41,7 @@ class ResourceRegistryNodeAdapter(XMLAdapterBase):
 
     resource_blacklist = set()
     registry = None
-    
+
     def _importNode(self, node):
         """Import the object from the DOM node.
         """

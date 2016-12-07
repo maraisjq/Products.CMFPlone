@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from Products.CMFPlone.resources.exportimport.resourceregistry import importResRegistry
-from Products.CMFPlone.resources.exportimport.resourceregistry import ResourceRegistryNodeAdapter
+from Products.CMFPlone.resources.exportimport.resourceregistry import importResRegistry  # noqa
+from Products.CMFPlone.resources.exportimport.resourceregistry import ResourceRegistryNodeAdapter  # noqa
 from Products.ResourceRegistries.interfaces import ICSSRegistry
 
 

@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_production_resource_directory():
+    """the directory, where the current production resources are located
+    """
     persistent_directory = queryUtility(IResourceDirectory, name='persistent')
     if persistent_directory is None:
         return ''
@@ -27,15 +29,16 @@ def get_production_resource_directory():
     try:
         production_folder = container[PRODUCTION_RESOURCE_DIRECTORY]
     except NotFound:
-        return '%s/++unique++1' % PRODUCTION_RESOURCE_DIRECTORY
+        return '{0}/++unique++1'.format(PRODUCTION_RESOURCE_DIRECTORY)
     if 'timestamp.txt' not in production_folder:
-        return '%s/++unique++1' % PRODUCTION_RESOURCE_DIRECTORY
+        return '{0}/++unique++1'.format(PRODUCTION_RESOURCE_DIRECTORY)
     timestamp = production_folder.readFile('timestamp.txt')
-    return '%s/++unique++%s' % (
-        PRODUCTION_RESOURCE_DIRECTORY, timestamp)
+    return '{0}/++unique++{1}'.format(PRODUCTION_RESOURCE_DIRECTORY, timestamp)
 
 
 def get_resource(context, path):
+    """fetch resource content from a given path
+    """
     if path.startswith('++plone++'):
         # ++plone++ resources can be customized, we return their override
         # value if any
@@ -47,43 +50,47 @@ def get_resource(context, path):
     try:
         resource = context.unrestrictedTraverse(path)
     except NotFound:
-        logger.warn(u'Could not find resource {0}. You may have to create it first.'.format(path))  # noqa
+        logger.warn(
+            u'Could not find resource {0}. '
+            u'You may have to create it first.'.format(path)
+        )
         return
 
     if isinstance(resource, FilesystemFile):
-        (directory, sep, filename) = path.rpartition('/')
+        directory, sep, filename = path.rpartition('/')
         return context.unrestrictedTraverse(directory).readFile(filename)
+    elif hasattr(aq_base(resource), 'GET'):
+        # for FileResource
+        return resource.GET()
     else:
-        if hasattr(aq_base(resource), 'GET'):
-            # for FileResource
-            return resource.GET()
-        else:
-            # any BrowserView
-            return resource()
+        # any BrowserView
+        return resource()
 
 
 def write_js(context, folder, meta_bundle):
+    sio = StringIO()
     registry = getUtility(IRegistry)
-    resources = []
 
     # default resources
     if (
         meta_bundle == 'default' and
         registry.records.get('plone.resources/jquery.js')
     ):
-        resources.append(
+        sio.write(
             get_resource(
                 context,
                 registry.records['plone.resources/jquery.js'].value
             )
         )
-        resources.append(
+        sio.write('\n')
+        sio.write(
             get_resource(
                 context,
                 registry.records['plone.resources.requirejs'].value
             )
         )
-        resources.append(
+        sio.write('\n')
+        sio.write(
             get_resource(
                 context,
                 registry.records['plone.resources.configjs'].value
@@ -99,19 +106,16 @@ def write_js(context, folder, meta_bundle):
     for bundle in bundles.values():
         if bundle.merge_with == meta_bundle and bundle.jscompilation:
             resource = get_resource(context, bundle.jscompilation)
-            if not resource:
-                continue
-            resources.append(resource)
+            if resource:
+                sio.write(resource)
+                sio.write('\n')
 
-    fi = StringIO()
-    for script in resources:
-        fi.write(script + '\n')
-    folder.writeFile(meta_bundle + '.js', fi)
+    folder.writeFile(meta_bundle + '.js', sio)
 
 
 def write_css(context, folder, meta_bundle):
+    sio = StringIO()
     registry = getUtility(IRegistry)
-    resources = []
 
     bundles = registry.collectionOfInterface(
         IBundleRegistry,
@@ -129,17 +133,20 @@ def write_css(context, folder, meta_bundle):
             # '/' or http: or data:
             css = re.sub(
                 r"""(url\(['"]?(?!['"]?([a-z]+:|\/)))""",
-                r'\1%s/' % path,
+                r'\1{0}/'.format(path),
                 css)
-            resources.append(css)
+            sio.write(css + '\n')
 
-    fi = StringIO()
-    for script in resources:
-        fi.write(script + '\n')
-    folder.writeFile(meta_bundle + '.css', fi)
+    folder.writeFile(meta_bundle + '.css', sio)
 
 
 def get_override_directory(context):
+    """the zodb directory.
+
+    used for
+    - overriding FileSystem resources and
+    - storing combined production merge-bundle
+    """
     persistent_directory = queryUtility(IResourceDirectory, name='persistent')
     if persistent_directory is None:
         return

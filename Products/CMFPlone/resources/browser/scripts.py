@@ -4,7 +4,6 @@ from Products.CMFPlone.resources.browser.resource import ResourceView
 from Products.CMFPlone.utils import get_top_request
 from urllib import quote
 from urlparse import urlparse
-from zope.component import getMultiAdapter
 
 
 class ScriptsView(ResourceView):
@@ -43,7 +42,7 @@ class ScriptsView(ResourceView):
 
     def get_data(self, bundle, result):
         if self.develop_bundle(bundle, 'develop_javascript'):
-            # Bundle development mode
+            # Bundle development mode, add single resources for delivery
             self._add_resources(
                 bundle.resources,
                 result,
@@ -53,42 +52,49 @@ class ScriptsView(ResourceView):
             )
             return
         if (
+            # Its a legacy bundle OR compiling is happening outside of plone
             not bundle.compile and
+
+            # It's possible no resources are defined because the compiling is
+            # done outside of plone
+            bundle.resources and
+
+            # if we're in debug-mode always get the latest shit.
+            # otherwise a legacy resource registry import wins also
             (
+                self.debug_mode or
                 not bundle.last_compilation or
                 self.last_legacy_import > bundle.last_compilation
-            ) and
-            bundle.resources
+            )
         ):
-            # Its a legacy css bundle OR compiling is happening outside of
-            # plone
-
-            # We need to combine files. It's possible no resources are
-            # defined because the compiling is done outside of plone
+            # We need to combine resource files.
+            # Attention: RequireJS is resetted for those resources!
             cookWhenChangingSettings(self.context, bundle)
-        if bundle.jscompilation:
-            js_path = bundle.jscompilation
-            if '++plone++' in js_path:
-                resource_path = js_path.split('++plone++')[-1]
-                resource_name, resource_filepath = resource_path.split(
-                    '/', 1)
-                js_location = '{0}/++plone++{1}/++unique++{2}/{3}'.format(
-                    self.site_url,
-                    resource_name,
-                    quote(str(bundle.last_compilation)),
-                    resource_filepath
-                )
-            else:
-                js_location = '{0}/{1}?version={2}'.format(
-                    self.site_url,
-                    bundle.jscompilation,
-                    quote(str(bundle.last_compilation))
-                )
-            result.append({
-                'bundle': bundle.name,
-                'conditionalcomment': bundle.conditionalcomment,
-                'src': js_location
-            })
+
+        if not bundle.jscompilation:
+            # nothing to do
+            return
+
+        if '++plone++' in bundle.jscompilation:
+            resource_path = bundle.jscompilation.split('++plone++')[-1]
+            resource_name, resource_filepath = resource_path.split('/', 1)
+            js_location = '{0}/++plone++{1}/++unique++{2}/{3}'.format(
+                self.site_url,
+                resource_name,
+                quote(str(bundle.last_compilation)),
+                resource_filepath
+            )
+        else:
+            js_location = '{0}/{1}?version={2}'.format(
+                self.site_url,
+                bundle.jscompilation,
+                quote(str(bundle.last_compilation))
+            )
+        result.append({
+            'bundle': bundle.name,
+            'conditionalcomment': bundle.conditionalcomment,
+            'src': js_location
+        })
 
     def default_resources(self):
         """ Default resources used by Plone itself
@@ -133,14 +139,6 @@ class ScriptsView(ResourceView):
             'bundle': 'basic'
         })
         return result
-
-    def base_url(self):
-        portal_state = getMultiAdapter(
-            (self.context, self.request),
-            name=u'plone_portal_state'
-        )
-        site_url = portal_state.portal_url()
-        return site_url
 
     def scripts(self):
         """The requirejs scripts, the ones that are not resources are loaded on
